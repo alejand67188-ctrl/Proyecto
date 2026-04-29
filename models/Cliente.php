@@ -8,9 +8,9 @@ class Cliente {
         if (!empty($search)) {
             $like = '%' . $search . '%';
             $s = $this->db->prepare(
-                "SELECT * FROM clientes WHERE nombre LIKE ? OR telefono LIKE ? OR email LIKE ? ORDER BY nombre"
+                "SELECT * FROM clientes WHERE nombre LIKE ? OR nit LIKE ? OR telefono LIKE ? OR email LIKE ? ORDER BY nombre"
             );
-            $s->bind_param("sss", $like, $like, $like);
+            $s->bind_param("ssss", $like, $like, $like, $like);
             $s->execute();
             $r = $s->get_result();
         } else {
@@ -22,13 +22,13 @@ class Cliente {
         $s=$this->db->prepare("SELECT * FROM clientes WHERE id=?");
         $s->bind_param("i",$id);$s->execute();return $s->get_result()->fetch_assoc();
     }
-    public function create($n,$t,$e,$d='') {
-        $s=$this->db->prepare("INSERT INTO clientes(nombre,telefono,email,direccion)VALUES(?,?,?,?)");
-        $s->bind_param("ssss",$n,$t,$e,$d);return $s->execute();
+    public function create($n,$nit='',$t='',$e='',$d='') {
+        $s=$this->db->prepare("INSERT INTO clientes(nombre,nit,telefono,email,direccion)VALUES(?,?,?,?,?)");
+        $s->bind_param("sssss",$n,$nit,$t,$e,$d);return $s->execute();
     }
-    public function update($id,$n,$t,$e,$d) {
-        $s=$this->db->prepare("UPDATE clientes SET nombre=?,telefono=?,email=?,direccion=? WHERE id=?");
-        $s->bind_param("ssssi",$n,$t,$e,$d,$id);return $s->execute();
+    public function update($id,$n,$nit='',$t='',$e='',$d='') {
+        $s=$this->db->prepare("UPDATE clientes SET nombre=?,nit=?,telefono=?,email=?,direccion=? WHERE id=?");
+        $s->bind_param("sssssi",$n,$nit,$t,$e,$d,$id);return $s->execute();
     }
     public function delete($id) {
         $s=$this->db->prepare("DELETE FROM clientes WHERE id=?");
