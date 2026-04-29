@@ -118,6 +118,7 @@ include __DIR__ . '/partials/head.php';
                 <div style="display:flex;gap:5px;flex-wrap:wrap">
                   <button class="btn btn-outline btn-sm" onclick="abrirEditar(this)">✏️ Editar</button>
                   <button class="btn btn-primary btn-sm" onclick="verHistorial(this)">📜 Historial</button>
+                  <button class="btn btn-primary btn-sm" onclick="verFacturas(this)">📄 Facturas</button>
                 </div>
                 <!-- Datos ocultos -->
                 <span style="display:none" class="d-id"><?=(int)$c['id']?></span>
@@ -191,6 +192,19 @@ include __DIR__ . '/partials/head.php';
   </div>
 </div>
 
+<!-- MODAL FACTURAS -->
+<div id="overlay-facturas" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:20px;overflow-y:auto" onclick="if(event.target===this)cerrarFacturas()">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card);z-index:1">
+      <span style="font-family:var(--font-display);font-size:1.1rem;color:var(--gold-light)">📄 Facturas del Cliente</span>
+      <button onclick="cerrarFacturas()" style="background:none;border:none;color:var(--white-muted);cursor:pointer;font-size:1.2rem">✕</button>
+    </div>
+    <div style="padding:20px">
+      <div id="facturas-contenido"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 function filtrar(q) {
   q = q.toLowerCase();
@@ -226,8 +240,27 @@ function verHistorial(btn) {
   document.getElementById('overlay-historial').style.display = 'flex';
 }
 
+function verFacturas(btn) {
+  var td = btn.closest('td');
+  var clienteId = td.querySelector('.d-id').textContent.trim();
+  var clienteNombre = td.querySelector('.d-nombre').textContent.trim();
+  var contenido = document.getElementById('facturas-contenido');
+  
+  // Simulación: buscar facturas del cliente por venta_id
+  // Aquí se debería hacer una petición AJAX a un controlador
+  contenido.innerHTML = '<div style="text-align:center;color:var(--white-muted);padding:40px;font-size:.9rem">' +
+    '<p style="margin-bottom:20px">Facturas del cliente: <strong style="color:var(--gold-light)">' + clienteNombre + '</strong></p>' +
+    '<p style="font-size:.8rem;color:var(--white-muted)">Las facturas se descargan desde el historial de compras.<br>' +
+    'Cada venta genera automáticamente una factura.</p>' +
+    '<button class="btn btn-primary" style="margin-top:20px;padding:10px 20px" onclick="cerrarFacturas()">Cerrar</button>' +
+    '</div>';
+  
+  document.getElementById('overlay-facturas').style.display = 'flex';
+}
+
 function cerrar() { document.getElementById('overlay-editar').style.display = 'none'; }
 function cerrarHistorial() { document.getElementById('overlay-historial').style.display = 'none'; }
+function cerrarFacturas() { document.getElementById('overlay-facturas').style.display = 'none'; }
 
 var mt = document.getElementById('menu-toggle'), sb = document.getElementById('sidebar');
 if (mt && sb) mt.addEventListener('click', function() { sb.classList.toggle('open'); });
