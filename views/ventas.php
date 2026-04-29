@@ -31,11 +31,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         else {
             // Si no hay cliente_id, buscar o crear
             if (!$cliente_id) {
-                // Buscar por documento
+                // Buscar por documento (NIT/CC)
                 $clientes_existe = $cm->getAll();
                 $cliente_existe = null;
                 foreach ($clientes_existe as $c) {
-                    if (trim($c['telefono']) === trim($cliente_documento)) {
+                    if (trim($c['nit']) === trim($cliente_documento)) {
                         $cliente_existe = $c;
                         break;
                     }
@@ -45,12 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Cliente existe, usar su ID
                     $cliente_id = $cliente_existe['id'];
                 } else {
-                    // Cliente no existe, crear
-                    if ($cm->create($cliente_nombre, $cliente_documento, '', '')) {
+                    // Cliente no existe, crear con NIT en posición correcta
+                    if ($cm->create($cliente_nombre, $cliente_documento, '', '', '')) {
                         // Obtener el cliente recién creado
                         $clientes_todos = $cm->getAll();
                         foreach ($clientes_todos as $c) {
-                            if (trim($c['telefono']) === trim($cliente_documento)) {
+                            if (trim($c['nit']) === trim($cliente_documento)) {
                                 $cliente_id = $c['id'];
                                 break;
                             }
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Obtener datos cliente para factura
                     $cliente_venta = $cm->getById($cliente_id);
                     $nombre_fact = $cliente_venta['nombre'] ?? $cliente_nombre;
-                    $doc_fact = $cliente_venta['telefono'] ?? $cliente_documento;
+                    $doc_fact = $cliente_venta['nit'] ?? $cliente_documento;
 
                     // Crear factura automáticamente
                     $subtotal = array_sum(array_map(fn($i) => $i['precio'] * $i['cantidad'], $items));
@@ -111,7 +111,7 @@ include __DIR__ . '/partials/head.php';
 
   <div class="content" style="display:grid;grid-template-columns:1fr 380px;gap:20px;height:calc(100vh - 100px);overflow:hidden">
     <div style="display:flex;flex-direction:column;gap:16px;overflow:hidden">
-      <?php if($msg): ?><div class="alert alert-success">✓ <?=htmlspecialchars($msg)?> <?php if($venta_generada): ?><button onclick="abrirFactura(<?=$venta_generada['id']?>)" style="margin-left:10px;background:var(--gold-light);border:none;color:var(--bg-card);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:.75rem">📄 Ver Factura</button><?php endif; ?></div><?php endif; ?>
+      <?php if($msg): ?><div class="alert alert-success">✓ <?=htmlspecialchars($msg)?> <?php if($venta_generada): ?><button onclick="abrirFactura(<?=$venta_generada['id']?>)" style="margin-left:10px;padding:6px 12px;background:var(--gold);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-weight:600;font-size:.85rem">📄 Ver Factura</button><?php endif; ?></div><?php endif; ?>
       <?php if($error): ?><div class="alert alert-error">⚠ <?=htmlspecialchars($error)?></div><?php endif; ?>
 
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;gap:10px">
@@ -124,9 +124,9 @@ include __DIR__ . '/partials/head.php';
           $tallas = $tm->getPorProducto($p['id']);
           $stock_total = max($p['stock'], array_sum(array_map(fn($t) => $t['stock'], $tallas)));
         ?>
-        <div class="prod-btn" tabindex="0" data-id="<?=$p['id']?>" data-codigo="<?=$p['codigo']??''?>" data-nombre="<?=htmlspecialchars($p['nombre'])?>" data-precio="<?=(int)$p['precio']?>" style="background:var(--bg-panel);border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:.15s;text-align:center">
+        <div class="prod-btn" tabindex="0" data-id="<?=$p['id']?>" data-codigo="<?=$p['codigo']??''?>" data-nombre="<?=htmlspecialchars($p['nombre'])?>" data-precio="<?=(int)$p['precio']?>" style="padding:10px;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;text-align:center">
           <div style="font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:4px"><?=$p['codigo']??'VR-'.str_pad($p['id'],4,'0',STR_PAD_LEFT)?></div>
-          <div style="font-size:.8rem;font-weight:600;color:var(--white);margin-bottom:6px;line-height:1.2" title="<?=htmlspecialchars($p['nombre'])?>"><?=htmlspecialchars(substr($p['nombre'],0,22))?></div>
+          <div style="font-size:.8rem;font-weight:600;color:var(--white);margin-bottom:6px;line-height:1.2" title="<?=htmlspecialchars($p['nombre'])?>"><?=htmlspecialchars(substr($p['nombre'],0,20))?></div>
           <div style="font-family:var(--font-display);font-size:.95rem;font-weight:700;color:var(--gold-light);margin-bottom:6px">$<?=number_format($p['precio'],0,',','.')?></div>
           <div style="font-size:.65rem;color:var(--success);font-weight:600">📦 <?=$stock_total?> disponibles</div>
         </div>
@@ -140,8 +140,8 @@ include __DIR__ . '/partials/head.php';
       <!-- CLIENTE: DOS INPUTS (Como antes) -->
       <div style="display:flex;flex-direction:column;gap:6px">
         <label style="font-size:.65rem;text-transform:uppercase;color:var(--white-muted);font-weight:700">Cliente</label>
-        <input type="text" id="cliente-nombre" placeholder="Nombre del cliente..." style="background:var(--bg-panel);border:1px solid var(--border);color:var(--white);padding:8px;border-radius:6px;font-size:.8rem;margin-bottom:6px">
-        <input type="text" id="cliente-documento" placeholder="Documento (CC/NIT)..." style="background:var(--bg-panel);border:1px solid var(--border);color:var(--white);padding:8px;border-radius:6px;font-size:.8rem">
+        <input type="text" id="cliente-nombre" placeholder="Nombre del cliente..." style="background:var(--bg-panel);border:1px solid var(--border);color:var(--white);padding:8px;border-radius:6px;font-size:.85rem">
+        <input type="text" id="cliente-documento" placeholder="NIT/CC del cliente..." style="background:var(--bg-panel);border:1px solid var(--border);color:var(--white);padding:8px;border-radius:6px;font-size:.85rem">
       </div>
 
       <!-- PRODUCTO Y TALLAS -->
@@ -164,7 +164,7 @@ include __DIR__ . '/partials/head.php';
       <!-- TOTALES -->
       <div style="background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;justify-content:space-between;font-size:.8rem"><span style="color:var(--white-muted)">Subtotal:</span><span id="subtotal" style="font-weight:700;color:var(--gold-light)">$0</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:700;border-top:1px solid rgba(201,168,76,.3);padding-top:8px"><span style="color:var(--gold)">TOTAL:</span><span id="total" style="font-family:var(--font-display);font-size:1.25rem;color:var(--gold-light)">$0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:700;border-top:1px solid rgba(201,168,76,.3);padding-top:8px"><span style="color:var(--gold)">TOTAL:</span><span id="total" style="color:var(--gold-light)">$0</span></div>
       </div>
 
       <!-- NOTAS -->
@@ -296,7 +296,8 @@ function actualizarCarrito() {
     return '<div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg-hover);border-radius:5px;margin-bottom:6px;font-size:.75rem">'+
       '<div><strong>' + i.nombre.substring(0,12) + '</strong><br>' + i.talla + '×' + i.cantidad + '</div>'+
       '<div style="text-align:right"><span style="color:var(--gold-light);font-weight:700">$' + (i.precio*i.cantidad).toLocaleString('es-CO') + '</span><br>'+
-      '<button style="background:var(--danger-dim);border:none;color:var(--danger);padding:2px 5px;border-radius:3px;cursor:pointer;font-size:.65rem" onclick="carrito.splice(' + idx + ',1);actualizarCarrito()">×</button></div></div>';
+      '<button style="background:var(--danger-dim);border:none;color:var(--danger);padding:2px 5px;border-radius:3px;cursor:pointer;font-size:.65rem" onclick="carrito.splice(' + idx + ',1);actualizarCarrito()">✕</button></div>'+
+      '</div>';
   }).join('');
   
   var sub = carrito.reduce(function(a,i) { return a + i.precio*i.cantidad; }, 0);
