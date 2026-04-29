@@ -16,14 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($action === 'editar' && $id > 0) {
         $nombre = trim($_POST['nombre'] ?? '');
+        $nit = trim($_POST['nit'] ?? '');
         $telefono = trim($_POST['telefono'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $direccion = trim($_POST['direccion'] ?? '');
-        $nit = trim($_POST['nit'] ?? '');
         
         if (empty($nombre)) { $error = 'El nombre es obligatorio'; }
         else {
-            if ($cm->update($id, $nombre, $telefono, $email, $direccion, $nit)) {
+            if ($cm->update($id, $nombre, $nit, $telefono, $email, $direccion)) {
                 $msg = 'Cliente actualizado correctamente';
             } else {
                 $error = 'Error al actualizar';
@@ -51,10 +51,10 @@ include __DIR__ . '/partials/head.php';
 
     <!-- INFORMACIÓN DE REGISTRO -->
     <div style="background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.25);border-radius:10px;padding:14px;margin-bottom:20px;font-size:.82rem;color:var(--success);display:flex;gap:12px">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13h-1v6l5.25 3.15.75-1.23-5-2.92z"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
       <div>
         <strong style="color:var(--white);display:block;margin-bottom:4px">📌 Clientes automáticos</strong>
-        <span style="color:var(--white-muted)">Los clientes se registran automáticamente cuando se realiza una venta. Este módulo es para consultar, editar información y ver historial de compra</span>
+        <span style="color:var(--white-muted)">Los clientes se registran automáticamente cuando se realiza una venta. Este módulo es para consultar, editar información y ver historial de compras.</span>
       </div>
     </div>
 
@@ -89,13 +89,12 @@ include __DIR__ . '/partials/head.php';
               <th>Compras</th>
               <th>Última Compra</th>
               <th>Total Gastado</th>
-              <th>Facturas</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <?php if(empty($clientes)): ?>
-            <tr><td colspan="9" class="table-empty">No hay clientes registrados</td></tr>
+            <tr><td colspan="8" class="table-empty">No hay clientes registrados</td></tr>
             <?php else: foreach($clientes as $c):
               $compras = $vm->getComprasPorCliente($c['id']);
               $num_compras = count($compras);
@@ -104,7 +103,7 @@ include __DIR__ . '/partials/head.php';
             ?>
             <tr>
               <td><strong><?=htmlspecialchars($c['nombre'])?></strong></td>
-              <td style="font-size:.85rem"><?=htmlspecialchars($c['nit']??'—')?></td>
+              <td style="font-size:.85rem;font-weight:600;color:var(--gold-light)"><?=htmlspecialchars($c['nit']??'—')?></td>
               <td style="font-size:.85rem"><?=htmlspecialchars($c['telefono']??'—')?></td>
               <td style="font-size:.85rem"><?=htmlspecialchars($c['email']??'—')?></td>
               <td>
@@ -115,11 +114,6 @@ include __DIR__ . '/partials/head.php';
                 <?=$ultima_compra ? date('d/m/Y',strtotime($ultima_compra)) : '—'?>
               </td>
               <td style="font-weight:600;color:var(--gold-light)">$<?=number_format($total_gastado,0,',','.')?></td>
-              <td>
-                <button class="btn btn-outline btn-sm" onclick="verFacturas(this)" style="font-size:.75rem">📄 Ver</button>
-                <!-- Facturas ocultas -->
-                <span style="display:none" class="d-facturas"><?=implode('|',array_map(fn($v)=>'#'.$v['id'].' - '.$v['fecha'].' - $'.number_format($v['total'],0,',','.'),array_slice($compras,0,10)))?></span>
-              </td>
               <td>
                 <div style="display:flex;gap:5px;flex-wrap:wrap">
                   <button class="btn btn-outline btn-sm" onclick="abrirEditar(this)">✏️ Editar</button>
@@ -145,7 +139,7 @@ include __DIR__ . '/partials/head.php';
 </div>
 
 <!-- MODAL EDITAR -->
-<div id="overlay-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this) cerrar()">
+<div id="overlay-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cerrar()">
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border)">
       <span style="font-family:var(--font-display);font-size:1.1rem;color:var(--gold-light)">✏️ Editar Cliente</span>
@@ -167,7 +161,7 @@ include __DIR__ . '/partials/head.php';
           <label>Teléfono</label>
           <input type="text" name="telefono" id="f-telefono">
         </div>
-        <div class="form-group span-2">
+        <div class="form-group">
           <label>Email</label>
           <input type="email" name="email" id="f-email">
         </div>
@@ -185,7 +179,7 @@ include __DIR__ . '/partials/head.php';
 </div>
 
 <!-- MODAL HISTORIAL -->
-<div id="overlay-historial" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:20px;overflow-y:auto" onclick="if(event.target===this) cerrarHistorial()">
+<div id="overlay-historial" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:20px;overflow-y:auto" onclick="if(event.target===this)cerrarHistorial()">
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card);z-index:1">
       <span style="font-family:var(--font-display);font-size:1.1rem;color:var(--gold-light)">📜 Historial de Compras</span>
@@ -193,19 +187,6 @@ include __DIR__ . '/partials/head.php';
     </div>
     <div style="padding:20px">
       <div id="historial-contenido"></div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL FACTURAS -->
-<div id="overlay-facturas" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:20px;overflow-y:auto" onclick="if(event.target===this) cerrarFacturas()">
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card);z-index:1">
-      <span style="font-family:var(--font-display);font-size:1.1rem;color:var(--gold-light)">📄 Facturas del Cliente</span>
-      <button onclick="cerrarFacturas()" style="background:none;border:none;color:var(--white-muted);cursor:pointer;font-size:1.2rem">✕</button>
-    </div>
-    <div style="padding:20px">
-      <div id="facturas-contenido"></div>
     </div>
   </div>
 </div>
@@ -245,25 +226,8 @@ function verHistorial(btn) {
   document.getElementById('overlay-historial').style.display = 'flex';
 }
 
-function verFacturas(btn) {
-  var td = btn.closest('tr').querySelector('td:last-child');
-  var facturas = td.querySelector('.d-facturas').textContent.trim();
-  var contenido = document.getElementById('facturas-contenido');
-  if (!facturas) {
-    contenido.innerHTML = '<div style="text-align:center;color:var(--white-muted);padding:40px;font-size:.9rem">Sin facturas registradas</div>';
-  } else {
-    contenido.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' + 
-      facturas.split('|').map(function(f) {
-        return '<div style="background:var(--bg-panel);padding:12px;border-radius:8px;border:1px solid var(--border);font-size:.85rem"><strong style="color:var(--gold-light)">' + f + '</strong></div>';
-      }).join('') + 
-      '</div>';
-  }
-  document.getElementById('overlay-facturas').style.display = 'flex';
-}
-
 function cerrar() { document.getElementById('overlay-editar').style.display = 'none'; }
 function cerrarHistorial() { document.getElementById('overlay-historial').style.display = 'none'; }
-function cerrarFacturas() { document.getElementById('overlay-facturas').style.display = 'none'; }
 
 var mt = document.getElementById('menu-toggle'), sb = document.getElementById('sidebar');
 if (mt && sb) mt.addEventListener('click', function() { sb.classList.toggle('open'); });
