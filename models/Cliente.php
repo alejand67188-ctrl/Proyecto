@@ -22,13 +22,13 @@ class Cliente {
         $s=$this->db->prepare("SELECT * FROM clientes WHERE id=?");
         $s->bind_param("i",$id);$s->execute();return $s->get_result()->fetch_assoc();
     }
-    public function create($n,$nit='',$t='',$e='',$d='') {
-        $s=$this->db->prepare("INSERT INTO clientes(nombre,nit,telefono,email,direccion)VALUES(?,?,?,?,?)");
-        $s->bind_param("sssss",$n,$nit,$t,$e,$d);return $s->execute();
+    public function create($n,$nit='',$t='',$e='',$d='',$f='') {
+        $s=$this->db->prepare("INSERT INTO clientes(nombre,nit,telefono,email,direccion,factura)VALUES(?,?,?,?,?,?)");
+        $s->bind_param("ssssss",$n,$nit,$t,$e,$d,$f);return $s->execute();
     }
-    public function update($id,$n,$nit='',$t='',$e='',$d='') {
-        $s=$this->db->prepare("UPDATE clientes SET nombre=?,nit=?,telefono=?,email=?,direccion=? WHERE id=?");
-        $s->bind_param("sssssi",$n,$nit,$t,$e,$d,$id);return $s->execute();
+    public function update($id,$n,$nit='',$t='',$e='',$d='',$f='') {
+        $s=$this->db->prepare("UPDATE clientes SET nombre=?,nit=?,telefono=?,email=?,direccion=?,factura=? WHERE id=?");
+        $s->bind_param("ssssssi",$n,$nit,$t,$e,$d,$f,$id);return $s->execute();
     }
     public function delete($id) {
         $s=$this->db->prepare("DELETE FROM clientes WHERE id=?");
