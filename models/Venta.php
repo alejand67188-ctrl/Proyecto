@@ -64,15 +64,15 @@ class Venta {
             $s->execute();
             $vid = $conn->insert_id;
 
+            // Verificar columna talla UNA SOLA VEZ antes del loop (no dentro del loop)
+            $chk = $conn->query("SHOW COLUMNS FROM detalle_venta LIKE 'talla'");
+            if ($chk->num_rows === 0) {
+                $conn->query("ALTER TABLE detalle_venta ADD COLUMN talla VARCHAR(20) NULL AFTER cantidad");
+            }
+
             foreach ($productos as $p) {
                 $sub   = $p['precio'] * $p['cantidad'];
                 $talla = isset($p['talla']) && $p['talla'] !== '' ? $p['talla'] : null;
-
-                // Verificar columna talla existe
-                $chk = $conn->query("SHOW COLUMNS FROM detalle_venta LIKE 'talla'");
-                if ($chk->num_rows === 0) {
-                    $conn->query("ALTER TABLE detalle_venta ADD COLUMN talla VARCHAR(20) NULL AFTER cantidad");
-                }
 
                 $s2 = $conn->prepare(
                     "INSERT INTO detalle_venta (venta_id, producto_id, cantidad, talla, precio_unitario, subtotal) VALUES (?,?,?,?,?,?)"
@@ -133,6 +133,38 @@ class Venta {
         $r = $s->get_result(); $a = [];
         while($row = $r->fetch_assoc()) $a[] = $row;
         return $a;
+    }
+
+    public function countComprasPorCliente($cliente_id) {
+        $s = $this->db->prepare(
+            "SELECT COUNT(*) as total FROM ventas WHERE cliente_id = ? AND estado != 'cancelada'"
+        );
+        $s->bind_param("i", $cliente_id);
+        $s->execute();
+        $r = $s->get_result();
+        return $r->fetch_assoc()['total'] ?? 0;
+    }
+
+    public function getComprasPorCliente($cliente_id) {
+        $s = $this->db->prepare(
+            "SELECT v.*, u.nombre as vendedor_nombre, p.nombre as promocion_nombre
+             FROM ventas v
+             LEFT JOIN usuarios u ON v.usuario_id = u.id
+             LEFT JOIN promociones p ON v.promocion_id = p.id
+             WHERE v.cliente_id = ? AND v.estado != 'cancelada'
+             ORDER BY v.fecha DESC"
+        );
+        $s->bind_param("i", $cliente_id);
+        $s->execute();
+        $r = $s->get_result();
+        $a = [];
+        while($row = $r->fetch_assoc()) $a[] = $row;
+        return $a;
+    }
+
+    // Alias para create()
+    public function crear($cliente_id, $usuario_id, $productos, $notas = '', $promocion_id = null, $descuento = 0, $total_sin_descuento = 0) {
+        return $this->create($cliente_id, $usuario_id, $productos, $notas, $promocion_id, $descuento, $total_sin_descuento);
     }
 }
 ?>
